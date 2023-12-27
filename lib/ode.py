@@ -21,8 +21,8 @@ class ODE:
         self._symb = symbol
         self._str2symb = {}
         self._str2symb["t"] = sp.symbols("t")
-        for d in range(1, self._dim + 1):
-            for n_deriv in range(self._order):
+        for n_deriv in range(self._order):
+            for d in range(1, self._dim + 1):
                 tmp =  symbol + str(d) + "'" * n_deriv
                 self._str2symb[tmp] = sp.symbols(tmp)
                     
