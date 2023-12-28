@@ -36,23 +36,24 @@ And ODE with initial values is usualy defined this way :
 
 
 $$\begin{aligned}
-&y^{(n)}(t \: )=f(t, y(t), y'(t),\ldots,y^{(n-1)}(t)) \\
+&y^{(n)}(t)=f(t, y(t), y'(t),\ldots,y^{(n-1)}(t)) \\
 &y(t_0)=y_0 \text{ } , \ldots, \text{ } y^{(n-1)}(t_0)=y^{n-1}_0 
 \end{aligned}$$
 
-where $y:I \rightarrow {\mathbb{R}}^m$ and $f:I\times ({\R}^m)^{n} \rightarrow \R^m$ and $I \subset \R$.
+where $y:I \rightarrow {\mathbb{R}}^m$ and $f:I\times ({\mathbb{R}}^m)^{n} \rightarrow \mathbb{R}^m$ and $I \subset \mathbb{R}$.
 
 To solve this ODE for values of $n \geq 2$ what you usually do is find an equivalent equation with reduced order :
 
 $$\begin{aligned}
-& Y(t) = (y(t), y'(t), \ldots, y^{(n-1)}(t))
-\\ & \frac{dY(t)}{dt}=F(t, Y(t))
+&Y(t) = (y(t), y'(t), \ldots, y^{(n-1)}(t)) \\
+&\frac{dY(t)}{dt}=F(t, Y(t))
 \end{aligned}$$
 
 where 
+
 $$\begin{aligned}
-F: \; & I\times (\R^m)^n \rightarrow (\R^m)^n
-\\ & (t, Y_1, Y_2, \ldots, Y_n) \mapsto (Y_2, \ldots, Y_n, f(t, Y_1, Y_2,\ldots,Y_n))
+F:&I\times (\mathbb{R}^m)^n \rightarrow (\mathbb{R}^m)^n \\
+&(t, Y_1, Y_2, \ldots, Y_n) \mapsto (Y_2, \ldots, Y_n, f(t, Y_1, Y_2,\ldots,Y_n))
 \end{aligned}$$
 
 Then once $Y$ is solved, you get the solution of the first equation : $y=Y[0]$.
@@ -78,6 +79,7 @@ where $(q, p) \in \mathbb{R}^2 \times \mathbb{R}^2$.
 How to fit this system to our model ? The idea : split every high-dimension equations into many 1-dimensions equations.
 
 In our case, it would first become like this :
+
 $$ (E') \left\lbrace
 \begin{aligned}
 &q_1'(t) = p_1(t), \\
@@ -92,12 +94,13 @@ $$ (E') \left\lbrace
 \right.$$
 
 Which can be written :
+
 $$\left\lbrace
 \begin{aligned}
-y'(t) =& f(t, y_1(t), y_2(t), y_3(t), y_4(t)) \\
+y'(t)=& f(t, y_1(t), y_2(t), y_3(t), y_4(t)) \\
 =&(y_3(t), y_4(t), -\frac{y_1(t)}{\sqrt{y_1(t)^2+y_2(t)^2}^3},-\frac{y_2(t)}{\sqrt{y_1(t)^2+y_2(t)^2}^3}) \\
-y(0) =& (y_1(0),y_2(0),y_3(0),y_4(0)) \\
-=& (q_{0, 1}, q_{0, 2}, p_{0, 1}, p_{0, 2})
+y(0)=&(y_1(0),y_2(0),y_3(0),y_4(0)) \\
+=&(q_{0, 1}, q_{0, 2}, p_{0, 1}, p_{0, 2})
 \end{aligned}
 \right.$$
 
