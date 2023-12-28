@@ -47,6 +47,7 @@ class Scheme:
         value = np.zeros((N, n * ode._order))
         value[0] = ode._initialValues
         for i in range(1, N):
+            print(f"step {i}")
             v = self._next_value(time[i-1], value[i-1], h)
             value[i] = v
         res = np.array([v[:self._ode._dim] for v in value])
@@ -275,6 +276,7 @@ class RungeKutta(Scheme):
         value = np.zeros((N, n * ode._order))
         value[0] = ode._initialValues
         for i in range(1, N):
+            print(f"step {i}")
             v = self._next_value_explicit(time[i-1], value[i-1], h)
             value[i] = v
         res = np.array([v[:ode._dim] for v in value])
@@ -299,7 +301,7 @@ class RungeKutta(Scheme):
         for i in range(self._q):
             for d in range(self._ode._order):
                 for j in range(1, self._ode._dim+1):
-                    nam = self._ode._symb + f"{i}_{j}" + "'" * d
+                    nam = "d" * d + self._ode._symb + f"{i}_{j}"
                     symb = sp.symbols(nam)
                     self._tmp_Ysymbols[i].append(symb)
                           
