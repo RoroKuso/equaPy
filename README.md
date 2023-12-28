@@ -36,11 +36,11 @@ And ODE with initial values is usualy defined this way :
 
 
 $$\begin{aligned}
-&y^{(n)}(t)=f(t, y(t), y'(t),\ldots,y^{(n-1)}(t)) \\
-&y(t_0)=y_0\:,\ldots,\: y^{(n-1)}(t_0)=y^{n-1}_0 
+&y^{(n)}(t \: )=f(t, y(t), y'(t),\ldots,y^{(n-1)}(t)) \\
+&y(t_0)=y_0 \text{ } , \ldots, \text{ } y^{(n-1)}(t_0)=y^{n-1}_0 
 \end{aligned}$$
 
-where $y:I \rightarrow {\R}^m$ and $f:I\times ({\R}^m)^{n} \rightarrow \R^m$ and $I \subset \R$.
+where $y:I \rightarrow {\mathbb{R}}^m$ and $f:I\times ({\R}^m)^{n} \rightarrow \R^m$ and $I \subset \R$.
 
 To solve this ODE for values of $n \geq 2$ what you usually do is find an equivalent equation with reduced order :
 
