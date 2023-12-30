@@ -124,10 +124,17 @@ More generally, an ODE system of dimension $m$ and order $n$ is written :
 $$ (E) \left\lbrace
 \begin{aligned}
 &y_1^{(n)}(t)=f_1(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
-&y_2^{(n)}(t)=f_2(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
+&y_2^{(n)}(t)=f_2(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t))
+\end{aligned}
+\right.$$
+
+$$ (E) \left\lbrace
+\begin{aligned}
+&\ldots \\
 &y_m^{(n)}(t)=f_m(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
 &(y_1, y_2,\ldots,y_m)(t_0)=(y_{1,0},y_{2,0},\ldots,y_{m,0}) \\
 &(y'_1, y'_2,\ldots,y'_m)(t_0)=(y'_{1,0},y'_{2,0},\ldots,y'_{m,0}) \\
+&\ldots \\
 &(y^{(n-1)}_1, y^{(n-1)}_2,\ldots,y^{(n-1)}_m)(t_0)=(y^{(n-1)}_{1,0},y^{(n-1)}_{2,0},\ldots,y^{(n-1)}_{m,0})
 \end{aligned}
 \right.$$
