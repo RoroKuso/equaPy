@@ -127,7 +127,7 @@ $$ (E) \left\lbrace
 &y_2^{(n)}(t)=f_2(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
 &\ldots \\
 &y_m^{(n)}(t)=f_m(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
-&(y_1, y_2, \ldots ,y_m)(t_0)=(y_{1,0}, y_{2,0}, \ldots ,y_{m,0})
+&(y_1, y_2, \ldots ,y_m)
 \end{aligned}
 \right.$$
 
