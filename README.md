@@ -112,7 +112,90 @@ The order can also be reduced, the same way we explained earlier.
 
 Once your system of ODEs is split into 1-dimension equations, you can feed it to the `ODE` class and solve it.
 
+When setting a 1-dimension equation of order $n$, you only give the expresion $f(...)$ of the equation $y^{(n)}(t)=f(...)$.
+Then, if derivatives appear in the expression, you have to write in the format `"d<var><index>"`.
+
+For example if i want to write $y''(t)=-y'(t) + 2*t$, you would have to give `"-dy1 + 2*t"` (assuming $y$ is 1-dimensional). See example for more details.
+
+For higher order derivatives, juste add as many `d` before the variable's name.
+
+More generally, an ODE system of dimension $m$ and order $n$ is written :
+
+$$(E)\left\lbrace
+\begin{aligned}
+&y_1^{(n)}(t)=f_1(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
+&y_2^{(n)}(t)=f_2(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
+&\ldots \\
+&y_m^{(n)}(t)=f_m(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
+&(y_1, y_2,\ldots,y_m)(t_0)=(y_{1,0},y_{2,0},\ldots,y_{m,0}) \\
+&(y'_1, y'_2,\ldots,y'_m)(t_0)=(y'_{1,0},y'_{2,0},\ldots,y'_{m,0}) \\
+&\ldots \\
+&(y^{(n-1)}_1, y^{(n-1)}_2,\ldots,y^{(n-1)}_m)(t_0)=(y^{(n-1)}_{1,0},y^{(n-1)}_{2,0},\ldots,y^{(n-1)}_{m,0})
+\end{aligned}
+\right.$$
+
+Then its reduced form is :
+
+$$(E)\left\lbrace
+\begin{aligned}
+&Y(t)=(y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
+&\frac{dY(t)}{dt}=F(t, Y(t)) \\
+&F(t, Y(t))=(y'_1(t), \ldots, y'_m(t), y''_1(t),\ldots, y''_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t), f_1(t, Y(t)),\ldots,f_m(t,Y(t)))
+\end{aligned}
+\right.$$
+
+
+
 ## Example
+### Brine tank cascade
+
+Let's try to solve the ODE system for the brine tank cascade problem.
+
+(source : University of Utah, Math Department)
+
+<img src="docs/img/cascade1.png" alt="ex1" width="500"/>
+
+And the equations are
+
+$$\left\lbrace
+\begin{aligned}
+x'_1(t)=&-\frac{1}{2}x_1(t), \\
+x'_2(t)=&\frac{1}{2}x_1-\frac{1}{4}x_2(t), \\
+x'_3(t)=&\frac{1}{4}x_2-\frac{1}{6}x_3(t).
+\end{aligned}
+\right.$$
+
+To solve it with equaPy :
+
+```python
+from lib.ode import ODE
+from lib.ode_methods import ExplicitEuler
+
+ode = ODE(3, 1, 0) # dim=3 1-dimension equations | order=1 | t0=0
+ode.setinit([20, 40, 60])
+ode.setsymbols("x") # arbitrary symbol
+ode.setfunction(1, "-x1/2")
+ode.setfunction(2, "x1/2 - x2/4")
+ode.setfunction(3, "x2/4 - x3/6")
+
+scheme = ExplicitEuler(ode) # choosing method
+T, N = 50, 1000
+time, values = scheme.solve(T, N)
+print(values[:10])
+
+>>> [[20.         40.         60.        ]
+     [19.5        40.         60.        ]
+     [19.0125     39.9875     60.        ]
+     [18.5371875  39.96296875 59.99984375]
+     [18.07375781 39.92686133 59.99938216]
+     [17.62191387 39.87961951 59.99847308]
+     [17.18136602 39.82167211 59.99698104]
+     [16.75183187 39.75343536 59.9947771 ]
+     [16.33303607 39.67531321 59.99173857]
+     [15.92471017 39.5876977  59.98774883]]
+```
+
+### 
 
 # TODO
 - Save/load ODEs
