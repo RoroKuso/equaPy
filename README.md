@@ -121,7 +121,7 @@ For higher order derivatives, juste add as many `d` before the variable's name.
 
 More generally, an ODE system of dimension $m$ and order $n$ is written :
 
-$$(E)\left\lbrace
+$$ (E) \left\lbrace
 \begin{aligned}
 &y_1^{(n)}(t)=f_1(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
 &y_2^{(n)}(t)=f_2(t, y_1(t), \ldots, y_m(t), y'_1(t),\ldots, y'_m(t), \ldots, y^{(n-1)}_1(t), \ldots, y^{(n-1)}_m(t)) \\
