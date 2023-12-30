@@ -59,9 +59,12 @@ def example8():
     ode.setfunction(2, "x1/2 - x2/4")
     ode.setfunction(3, "x2/4 - x3/6")
     
-    scheme = RungeKutta(ode, butcher="RK2")
-    time, values = scheme.solve(50, 200)
+    scheme = ExplicitEuler(ode)
+    T, N = 50, 1000
+    time, values = scheme.solve(T, N)
+    print(values[:10])
     
+    plt.title(f"bin tank cascade, {scheme.name}\n T = {T}, N = {N}")
     plt.plot(time, values[:,0], label='upper tank')
     plt.plot(time, values[:,1], label='middle tank')
     plt.plot(time, values[:,2], label='lower tank')
@@ -122,9 +125,9 @@ def example10():
     ode.setsymbols("x")
     ode.setfunction(1, f"-({w}**2) * (x1 - {yeq})")
     
-    scheme = CrankNicolson(ode)
-    T = 100
-    N = 1000
+    scheme = RungeKutta(ode, butcher="RadauIIA")
+    T = 50
+    N = 500
     time, values = scheme.solve(T, N)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13,5))
@@ -167,8 +170,8 @@ def example11():
     ode.setfunction(2, "x1/2 - x2/4")
     ode.setfunction(3, "x2/4 - x3/6")
     
-    scheme1 = ImplicitEuler(ode)
-    scheme2 = RungeKutta(ode, butcher="RK2")
+    scheme1 = ExplicitEuler(ode)
+    scheme2 = ImplicitEuler(ode)
     scheme3 = RungeKutta(ode, butcher="RK4")
     # scheme2 = ModifiedEuler(ode)
     # scheme3 = ImplicitEuler(ode)
@@ -190,7 +193,72 @@ def example11():
     plt.legend()
     plt.show()
     
+def example_pendulum():
+    "double pendulum"
+    m1, m2 = 1, 1
+    l1, l2 = 4, 4
+    g = 9.81
+    r0 = 3.14 * .99
+    ode = ODE(2, 2, 0)
+    ode.setinit([r0, r0, 0, 0])
+    ode.setsymbols("r")
+    func1 = f"-({m1+m2} / ({m1+m2} - ((cos(r1-r2))**2) * {m2})) * (1 / {m1*l1+m2*l1}) * ({m2} * ({g}*sin(r1) + {l2}*((dr2)**2)*sin(r1-r2) - cos(r1-r2) * ({g}*sin(r2) - {l1}*((dr1)**2)*sin(r1-r2))) + {m1*g}*sin(r1))"
+    func2 = f"-(1 / {l2}) * ({g}*sin(r2) + {l1} * ({func1}*cos(r1-r2) - ((dr1)**2)*sin(r1-r2)))"
+    ode.setfunction(1, func1)
+    ode.setfunction(2, func2)
+    
+    scheme = RungeKutta(ode, butcher="RK4")
+    T, N = 100, 5000
+    time, values = scheme.solve(T, N)
+    
+    # T, N = 100, 5000
+    # values = np.load("data/dpendulum_T100_N5000.npy")
+    
+    fig, ax = plt.subplots()
+    fig.suptitle(f"double pendulum (RK4)\n T={T}, N={N}\n")
+    scat1 = ax.scatter([], [], c='b', s=5)
+    line1, = ax.plot([], [], 'r')
+    line2, = ax.plot([], [], 'r')
+    line3, = ax.plot([], [], 'k', linestyle='dotted', linewidth=1, markersize=1)
+    ax.set(xlim=[-10, 10], ylim=[-10, 10])
+    ax.legend()
+    
+    x1_list = np.array([l1*math.sin(r1) for r1 in values[:,0]])
+    x2_list = x1_list + np.array([l2 * math.sin(r2) for r2 in values[:,1]])
+    y1_list = np.array([-l1*math.cos(r1) for r1 in values[:,0]])
+    y2_list = y1_list + np.array([-l2*math.cos(r2) for r2 in values[:,1]])
+    
+    for i in range(N):
+        print(math.sqrt((x2_list[i]-x1_list[i])**2 + (y2_list[i]-y1_list[i])**2))
+        
+    def update1(frame):
+        x1, y1 = x1_list[frame], y1_list[frame]
+        x2, y2 = x2_list[frame], y2_list[frame]
+        shadow_x = x2_list[max(0, frame-N//30):frame+1]
+        shadow_y = y2_list[max(0, frame-N//30):frame+1]
+        
+        
+        data1 = np.stack([(x1, x2), (y1, y2)]).T
+        scat1.set_offsets(data1)
+        line1.set_data([0, x1], [0, y1])
+        line2.set_data([x1, x2], [y1, y2])
+        line3.set_data(shadow_x, shadow_y)
+        
+        return scat1, line1, line2, line3
+    
+    ani = animation.FuncAnimation(fig=fig, func=update1, frames=500, interval=10)
+    plt.legend()
+    plt.show()
+    
+    # To save the animation using Pillow as a gif
+    # writer = animation.PillowWriter(fps=30)
+    # ani.save('docs/img/dpendulum1.gif', writer=writer)
+    
+    
+    
+    
 if __name__ == '__main__':
-    example11()
+    example8()
+    # example_pendulum()
     
     

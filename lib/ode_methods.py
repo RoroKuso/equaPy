@@ -1,14 +1,29 @@
+"""
+Contains algorithms for numerical resolution of ODEs 
+"""
+
 import numpy as np
 import sympy as sp
 import copy
 
 from lib.ode import ODE
-from typing import Optional
 from math import factorial
-
 from lib.constants import RKdict
 
 def newton_n(f, df, x0, context, eps=1e-13):
+    """
+    Newton algorithm to find roots.
+    
+    Parameters
+    ----------
+    f : sympy matrix
+    df : sympy matrix
+        Jacobian of f.
+    x0 : array
+        Initial value.
+    context : array
+        Variables of the function.
+    """
     if df.det() == 0:
         return x0
     
@@ -40,6 +55,16 @@ class Scheme:
         raise NotImplementedError("Can't create instance of interface class Scheme !")
     
     def solve(self, T, N):
+        """
+        General method to solve ODEs.
+        
+        Parameters
+        ----------
+        T : float
+            Time limit.
+        N : int
+            Number of points.
+        """
         ode = self._ode
         n = ode._dim
         h: float = T / N
@@ -266,8 +291,7 @@ class RungeKutta(Scheme):
             res += h * tmp
             
         return res
-                
-                
+                 
     def _solve_explicit(self, T, N):
         ode = self._ode
         n = ode._dim

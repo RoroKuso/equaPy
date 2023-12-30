@@ -1,6 +1,3 @@
-from typing import Dict, List
-from sympy import symbols, Symbol
-
 import sympy as sp
 
 class ODE:
@@ -28,9 +25,27 @@ class ODE:
         self._expr = {}
             
     def setinit(self, i_values):
+        """
+        Set initial values.
+        
+        Parameters
+        ----------
+        i_values : list
+            Initial values for each variables.
+        """
         self._initialValues = i_values
         
     def setsymbols(self, symbol):
+        """
+        Set the symbol to represent the variables.
+        
+        If `symbol = 'x'` the variables names will be `x1, x2, ..., dx1, dx2, ...`
+        
+        Parameters
+        ----------
+        symbol : str
+            Symbol for the variables.
+        """
         self._symb = symbol
         self._str2symb = {}
         self._str2symb["t"] = sp.symbols("t")
@@ -40,5 +55,15 @@ class ODE:
                 self._str2symb[tmp] = sp.symbols(tmp)
                     
     def setfunction(self, i, f):
+        """
+        Set the `i`-th 1-dimensional expression of the equation.
+        
+        Parameters
+        ----------
+        i : int
+            Index of the expression.
+        f : str
+            Expression (right part of the equation).
+        """
         expr = sp.sympify(f, locals=self._str2symb)
         self._expr[i] = expr
