@@ -1,4 +1,5 @@
 import sympy as sp
+import numpy as np
 
 class ODE:
     """
@@ -23,6 +24,8 @@ class ODE:
         if tn is not None:
             self._tn = tn
         self._expr = {}
+        self._flams = {}
+        self._update_layer = []
             
     def setinit(self, i_values):
         """
@@ -53,6 +56,7 @@ class ODE:
             for d in range(1, self._dim + 1):
                 tmp =  "d" * n_deriv + symbol + str(d)
                 self._str2symb[tmp] = sp.symbols(tmp)
+                
                     
     def setfunction(self, i, f):
         """
@@ -67,3 +71,16 @@ class ODE:
         """
         expr = sp.sympify(f, locals=self._str2symb)
         self._expr[i] = expr
+        symbols = [self._str2symb[e] for e in self._str2symb]
+        self._flams[i] = sp.lambdify(symbols, expr)
+    
+    def set_linearized_flam(self):
+        symbols = [self._str2symb[e] for e in self._str2symb]
+        mainflam =  symbols[1+self._dim:]
+        for i in range(1, self._dim+1):
+            mainflam.append(self._expr[i])
+        self._mainflam = sp.lambdify(symbols, mainflam)
+        
+        
+    def add_update_layer(self, func):
+        self._update_layer.append(func)

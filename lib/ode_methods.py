@@ -4,6 +4,7 @@ Contains algorithms for numerical resolution of ODEs
 
 import numpy as np
 import sympy as sp
+import torch
 import copy
 
 from lib.ode import ODE
@@ -54,6 +55,15 @@ class Scheme:
     def __init__(self):
         raise NotImplementedError("Can't create instance of interface class Scheme !")
     
+    def _step_update(self, time, value, h):
+        """
+        Returns the next value of the scheme with some additional behavior (update layer, printing...).
+        """
+        v = self._next_value(time, value, h)
+        for f in self._ode._update_layer:
+            f(v)
+        return v
+    
     def solve(self, T, N):
         """
         General method to solve ODEs.
@@ -65,18 +75,27 @@ class Scheme:
         N : int
             Number of points.
         """
-        ode = self._ode
+        
+        # Initialization
+        ode: ODE = self._ode
         n = ode._dim
         h: float = T / N
         time = np.array([ode._t0 + i * h for i in range(N)])
-        value = np.zeros((N, n * ode._order))
-        value[0] = ode._initialValues
+        value = np.empty((N, n * ode._order))
+        value[0] = np.array(ode._initialValues)
+        
+        # Loop method
         for i in range(1, N):
             print(f"step {i}")
-            v = self._next_value(time[i-1], value[i-1], h)
+            v = self._step_update(time[i-1], value[i-1], h)
             value[i] = v
-        res = np.array([v[:self._ode._dim] for v in value])
-        return (time, res)
+            
+        # Process result
+        ret = np.empty((N, ode._dim))
+        for i in range(N):
+            ret[i] = value[i][:ode._dim]
+
+        return (time, ret)
     
 class ExplicitEuler(Scheme):
     name = "Explicit Euler"
@@ -84,12 +103,8 @@ class ExplicitEuler(Scheme):
         self._ode = ode
          
     def _next_value(self, t_n, y_n, h):
-        ode = self._ode
-        symbols = [ode._str2symb[e] for e in ode._str2symb]
-        tmp = y_n[ode._dim::]
-        for i in range(1, self._ode._dim+1):
-            flam = sp.lambdify(symbols, ode._expr[i])
-            tmp = np.append(tmp, flam(t_n, *y_n))
+        flam = self._ode._mainflam
+        tmp = np.array(flam(t_n, *y_n))
         return y_n + h * tmp
             
     
@@ -99,16 +114,17 @@ class ModifiedEuler(Scheme):
         self._ode = ode
         
     def _next_value(self, t_n, y_n, h):
-        ode = self._ode
-        symbols = [ode._str2symb[e] for e in ode._str2symb]
-        tmp = y_n[ode._dim::]
-        for i in range(1, ode._dim+1):
-            flam = sp.lambdify(symbols, ode._expr[i])
-            new_y = y_n + (h/2) * flam(t_n, *y_n)
-            tmp = np.append(tmp, flam(t_n + h/2, *new_y))
-        return y_n + h * tmp
+        flam = self._ode._mainflam
+        tmp = y_n + (h/2) * np.array(flam(t_n + h/2, *y_n))
+        ret = np.array(flam(t_n + h/2, *tmp))
+        return y_n + h * ret
+    
+    
+def _newton(f, t_n, y_n, h, ode):
+    y_0 = copy.deepcopy(y_n)
+    value = f(t_n + h, y_0)
+    
         
-            
 class ImplicitEuler(Scheme):
     name = "Implicit Euler"
     def __init__(self, ode: ODE):
@@ -116,17 +132,18 @@ class ImplicitEuler(Scheme):
         
     def _next_value(self, t_n, y_n, h):
         ode = self._ode
-
-        y_symbols = np.array([ode._str2symb[e] for e in ode._str2symb if e != "t"])
-        t = ode._str2symb["t"]
-        tmp = y_n[ode._dim::]
-        for i in range(1, ode._dim+1):
-            tmp = np.append(tmp, ode._expr[i].subs(t, t_n+h))
+        tmp = ode._mainflam
         
-        to_solve = y_symbols - y_n - h * tmp
-        V = sp.Matrix(to_solve)
-        J = sp.Matrix.jacobian(V, y_symbols)
-        return newton_n(V, J, y_n, y_symbols)
+        # y_symbols = np.array([ode._str2symb[e] for e in ode._str2symb if e != "t"])
+        # t = ode._str2symb["t"]
+        # tmp = y_n[ode._dim::]
+        # for i in range(1, ode._dim+1):
+        #     tmp = np.append(tmp, ode._expr[i].subs(t, t_n+h))
+        
+        # to_solve = y_symbols - y_n - h * tmp
+        # V = sp.Matrix(to_solve)
+        # J = sp.Matrix.jacobian(V, y_symbols)
+        # return newton_n(V, J, y_n, y_symbols)
     
 class CrankNicolson(Scheme):
     name = "Crank Nicolson"
@@ -221,25 +238,17 @@ class RungeKutta(Scheme):
     
     def _next_value_explicit(self, t_n, y_n, h):
         q = self._q
-        symbols = [self._ode._str2symb[s] for s in self._ode._str2symb]
-        y_symbols = [self._ode._str2symb[s] for s in self._ode._str2symb if s != "t"]
-
-        mainexpr =  np.array(y_symbols[self._ode._dim:])
-        for k in range(1, self._ode._dim+1):
-            mainexpr = np.append(mainexpr, self._ode._expr[k])        
-        
+        flam = self._ode._mainflam
         yi_val = [copy.deepcopy(y_n)]
+        
         for i in range(1, q):
             tmp = copy.deepcopy(y_n)
             for j in range(i):
-                expr = self._butcher[0][i][j] * mainexpr
-                flam = sp.lambdify(symbols, list(expr))
-                tmp += h * np.array(flam(t_n + self._butcher[2][j] * h, *yi_val[j]))
+                tmp += self._butcher[0][i][j] * h * np.array(flam(t_n + self._butcher[2][j] * h, *yi_val[j]))
             yi_val.append(tmp)
             
         res = copy.deepcopy(y_n)
         for i in range(q):
-            flam = sp.lambdify(symbols, list(mainexpr))
             res += self._butcher[1][i] * h * np.array(flam(t_n + self._butcher[2][i]*h, *yi_val[i]))
             
         return res
@@ -297,8 +306,8 @@ class RungeKutta(Scheme):
         n = ode._dim
         h: float = T / N
         time = np.array([ode._t0 + i * h for i in range(N)])
-        value = np.zeros((N, n * ode._order))
-        value[0] = ode._initialValues
+        value = np.empty((N, n * ode._order))
+        value[0] = np.array(ode._initialValues)
         for i in range(1, N):
             print(f"step {i}")
             v = self._next_value_explicit(time[i-1], value[i-1], h)
