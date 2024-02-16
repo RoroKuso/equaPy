@@ -11,34 +11,27 @@ from lib.ode import ODE
 from math import factorial
 from lib.constants import RKdict
 
-def newton_n(f, df, x0, context, eps=1e-13):
-    """
-    Newton algorithm to find roots.
+def _newton(f, y_n, treshold=1e-7):
+    n = len(y_n)
+    inputs = torch.from_numpy(y_n)
+    jac = torch.autograd.functional.jacobian(f, inputs)
+    b = torch.diag(torch.ones(n, dtype=torch.double))
     
-    Parameters
-    ----------
-    f : sympy matrix
-    df : sympy matrix
-        Jacobian of f.
-    x0 : array
-        Initial value.
-    context : array
-        Variables of the function.
-    """
-    if df.det() == 0:
-        return x0
+    if not torch.linalg.det(jac):
+        return y_n
     
-    dfinv = df.inv()
-    x_n = x0
-    tmp = dfinv * f
-    tmpflam = sp.lambdify(context, tmp, "numpy")
-    x_next = x_n - np.array(tmpflam(*x_n)).flatten()
+    inv_jac = torch.linalg.solve(jac, b)
+    next_inputs = inputs - torch.matmul(inv_jac, f(inputs))
     
-    while np.linalg.norm(x_next - x_n) > eps:
-        x_n = x_next
-        x_next = x_n - np.array(tmpflam(*x_n)).flatten()
-        
-    return x_next
+    while torch.linalg.vector_norm(next_inputs - inputs) > treshold:
+        jac = torch.autograd.functional.jacobian(f, next_inputs)
+        if not torch.linalg.det(jac):
+            break
+        inv_jac = torch.linalg.solve(jac, b)
+        inputs = next_inputs
+        next_inputs = inputs - torch.matmul(inv_jac, f(inputs))
+    
+    return next_inputs.detach().numpy()
 
 def _RKCheck(butcher):
     """
@@ -54,6 +47,9 @@ def _RKCheck(butcher):
 class Scheme:
     def __init__(self):
         raise NotImplementedError("Can't create instance of interface class Scheme !")
+    
+    def _next_value(self, time, value, h):
+        return value
     
     def _step_update(self, time, value, h):
         """
@@ -86,7 +82,8 @@ class Scheme:
         
         # Loop method
         for i in range(1, N):
-            print(f"step {i}")
+            if not i%100:
+                print(f"step {i}")
             v = self._step_update(time[i-1], value[i-1], h)
             value[i] = v
             
@@ -101,17 +98,17 @@ class ExplicitEuler(Scheme):
     name = "Explicit Euler"
     def __init__(self, ode: ODE):
         self._ode = ode
-         
+        
     def _next_value(self, t_n, y_n, h):
         flam = self._ode._mainflam
         tmp = np.array(flam(t_n, *y_n))
-        return y_n + h * tmp
-            
+        return y_n + h * tmp   
     
 class ModifiedEuler(Scheme):
     name = "Modified Euler"
     def __init__(self, ode: ODE):
         self._ode = ode
+        self._ode.set_linearized_flam()
         
     def _next_value(self, t_n, y_n, h):
         flam = self._ode._mainflam
@@ -119,74 +116,52 @@ class ModifiedEuler(Scheme):
         ret = np.array(flam(t_n + h/2, *tmp))
         return y_n + h * ret
     
-    
-def _newton(f, t_n, y_n, h, ode):
-    y_0 = copy.deepcopy(y_n)
-    value = f(t_n + h, y_0)
-    
-        
 class ImplicitEuler(Scheme):
     name = "Implicit Euler"
     def __init__(self, ode: ODE):
         self._ode = ode
-        
+        self._ode.set_linearized_flam()
+         
     def _next_value(self, t_n, y_n, h):
-        ode = self._ode
-        tmp = ode._mainflam
-        
-        # y_symbols = np.array([ode._str2symb[e] for e in ode._str2symb if e != "t"])
-        # t = ode._str2symb["t"]
-        # tmp = y_n[ode._dim::]
-        # for i in range(1, ode._dim+1):
-        #     tmp = np.append(tmp, ode._expr[i].subs(t, t_n+h))
-        
-        # to_solve = y_symbols - y_n - h * tmp
-        # V = sp.Matrix(to_solve)
-        # J = sp.Matrix.jacobian(V, y_symbols)
-        # return newton_n(V, J, y_n, y_symbols)
+        tmp = self._ode._mainflam
+        def _to_solve(x):
+            arg = x.detach().numpy()
+            return x - h * torch.from_numpy(np.array(tmp(t_n+h, *arg))) - torch.from_numpy(y_n)
+        return _newton(_to_solve, y_n)   
     
 class CrankNicolson(Scheme):
     name = "Crank Nicolson"
     def __init__(self, ode: ODE):
         self._ode = ode
+        self._ode.set_linearized_flam()
         
     def _next_value(self, t_n, y_n, h):
-        ode = self._ode
-
-        symbols = [ode._str2symb[e] for e in ode._str2symb]
-        y_symbols = np.array([ode._str2symb[e] for e in ode._str2symb if e != "t"])
-        t = ode._str2symb["t"]
-        
-        tmp1 = y_n[ode._dim::]
-        tmp2 = y_n[ode._dim::]
-        
-        for i in range(1, ode._dim+1):
-            flam = sp.lambdify(symbols, ode._expr[i])
-            tmp1 = np.append(tmp1, flam(t_n, *y_n))
-            tmp2 = np.append(tmp2, ode._expr[i].subs(t, t_n+h))
-        
-        to_solve = y_symbols - y_n - (h/2) * (tmp1 + tmp2)
-        V = sp.Matrix(to_solve)
-        J = sp.Matrix.jacobian(V, y_symbols)
-        return newton_n(V, J, y_n, y_symbols)
+        tmp = self._ode._mainflam
+        def _to_solve(x):
+            arg = x.detach().numpy()
+            return x - torch.from_numpy(y_n) - (h/2) * (
+                torch.from_numpy(np.array(tmp(t_n, *y_n))) - \
+                torch.from_numpy(np.array(tmp(t_n+h, *arg))))
+            
+        return _newton(_to_solve, y_n)
     
 class Taylor(Scheme):
     def __init__(self, ode: ODE, p: int = 1):
         self._ode = ode
         self._order = p
-        self._derF = {}
+        self._derF = []
         self.name = f"Taylor p = {p}"
+        self._ode.set_linearized_flam()
         
     def _process_derivatives(self):
         ode = self._ode
         symbols = np.array([ode._str2symb[e] for e in ode._str2symb])
-        y_symbols1 = np.array([e for e in ode._str2symb if e != "t"])
-        y_symbols2 = np.array([ode._str2symb[e] for e in ode._str2symb if e != "t"])
-        tmp = y_symbols2[ode._dim::]
+        
+        tmp = symbols[1+ode._dim:]
         for i in range(1, ode._dim+1):
             tmp = np.append(tmp, ode._expr[i])
             
-        self._derF[0] = tmp
+        self._derF.append(tmp)
         for k in range(1, self._order+1):
             deriv1 = np.array([])
             for i in range(ode._dim * ode._order):
@@ -196,26 +171,21 @@ class Taylor(Scheme):
                 deriv2 = np.array([])
 
                 for i in range(ode._dim * ode._order):
-                    deriv2 = np.append(deriv2, sp.diff(self._derF[k-1][i], y_symbols2[j]))
-                    deriv2[i] = deriv2[i] * self._derF[0][j]
+                    deriv2 = np.append(deriv2, sp.diff(self._derF[k-1][i], symbols[1+j]) * self._derF[0][j])
                     
                 deriv1 += deriv2
-                
-            self._derF[k] = deriv1
+            
+            self._derF.append(deriv1)
      
     def _computeF(self, h):
+        symbols = np.array([self._ode._str2symb[e] for e in self._ode._str2symb])
         res = self._derF[0]
         for k in range(2, self._order+1):
             res += self._derF[k-1] * (h**(k-1)) / factorial(k)    
-        self._F = res
+        self._Flam = sp.lambdify(symbols, list(res))
         
     def _next_value(self, t_n, y_n, h):
-        ode = self._ode
-        symbols = [ode._str2symb[e] for e in ode._str2symb]
-        F = self._F
-        Flam = sp.lambdify(symbols, list(F))
-        
-        return y_n + h * np.array(Flam(t_n, *y_n))
+        return y_n + h * np.array(self._Flam(t_n, *y_n))
     
     def solve(self, T, N):
         h = T / N
@@ -226,6 +196,7 @@ class Taylor(Scheme):
 class RungeKutta(Scheme):
     def __init__(self, ode: ODE, butcher="RK4"):
         self._ode = ode
+        self._ode.set_linearized_flam()
         if isinstance(butcher, str):
             self._butcher = RKdict[butcher]
             self.name = f"Runge-Kutta {butcher}"
