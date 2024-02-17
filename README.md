@@ -16,7 +16,9 @@ You can email me if you are interested in the course's pdf. But please note that
 ## Table of contents
 1. [What can you do with equaPy ?](#what-can-you-do-with-equapy)
 2. [How does it work ?](#how-does-it-work)
-3. [Example](#example)
+3. [Examples](#examples)
+    - [Brine tank cascade](#brine-tank-cascade)
+    - [Bouncing ball 2D](#bouncing-ball-2d)
 4. [TODO](#todo)
 
 # What can you do with equaPy
@@ -153,7 +155,7 @@ The `ODE` class stores a list of functions, called an *update layer*. At each st
 Once your ODE is ready, you can feed it to a scheme object for it to solve. The list of available methods is [here](#what-can-you-do-with-equapy).
 
 
-## Example
+## Examples
 ### Brine tank cascade
 
 Let's try to solve the ODE system for the brine tank cascade problem.
@@ -201,6 +203,60 @@ print(values[:10])
      [16.33303607 39.67531321 59.99173857]
      [15.92471017 39.5876977  59.98774883]]
 ```
+
+### Bouncing ball 2D
+Let's try to model the trajectory of a 2D bouncing ball inside a box.
+We will only consider gravity and air friction(as constants) here.
+
+The equations : 
+$$\left\lbrace
+\begin{aligned}
+    x''(t) &= -cx'(t) \\
+    y''(t) &= (-g - cy'(t))\frac{1}{m} &\text{where } c=0.1, m=1 \text{ and } g=9.81
+\end{aligned}
+\right.$$
+
+In addition we want the ball to bounce if it reaches a boundary. Our update layer will be:
+
+```python
+def bounce2D(value):
+    loss = .9
+    if value[0] < 0.02: 
+        value[2] *= -loss
+        value[0] = 0.02
+    elif value[0] > 0.98:
+        value[2] *= -loss
+        value[0] = 0.98
+        
+    if value[1] < 0.05:
+        value[3] *= -loss
+        value[1] = 0.049
+```
+
+What it does is change the direction of the velocity vector on the corresponding axis when a boundary is reached.
+It also reduces the speed on impact.
+If the ball goes beyond a boundary, it's position is adjusted.
+
+Then to solve the ODE:
+
+```python
+frot, m, grav = 0.1, 1, 9.81
+ode = ODE(2, 2, 0)
+ode.setinit([0.3, 1, 2, 0])
+ode.setsymbols("x")
+ode.setfunction(1, f"-dx1 * {frot}")
+ode.setfunction(2, f"(-{grav}-dx2 * {frot}) / {m}")
+ode.add_update_layer(bounce2D)
+
+scheme = ExplicitEuler(ode)
+T = 50
+N = 5000
+time, values = scheme.solve(T, N)
+```
+
+Then with some custom animation function we obtain :
+
+<img src="docs/img/bouncingBall2D.gif" alt="gif" width="500"/>
 
 ### 
 
