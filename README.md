@@ -19,7 +19,7 @@ You can email me if you are interested in the course's pdf. But please note that
 3. [Example](#example)
 4. [TODO](#todo)
 
-# What can you do with equaPy ?
+# What can you do with equaPy
 For now equaPy includes :
 - Definition of ODEs
 - Numerical methods:
@@ -30,7 +30,7 @@ For now equaPy includes :
     - Taylor
     - Runge Kutta
 
-# How does it work ?
+# How does it work
 ## The model
 And ODE with initial values is usualy defined this way :
 
