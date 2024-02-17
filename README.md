@@ -14,10 +14,10 @@ Most of the science behind the project is from a course I took at Sorbonne Unive
 You can email me if you are interested in the course's pdf. But please note that it is written in french.
 
 ## Table of contents
-1. [What can you do with equaPy ?](README.md#what-can-you-do-with-equapy)
-2. [How does it work ?](README.md#how-does-it-work)
-3. [Example](README.md#example)
-4. [TODO](README.md#todo)
+1. [What can you do with equaPy ?](#what-can-you-do-with-equapy)
+2. [How does it work ?](#how-does-it-work)
+3. [Example](#example)
+4. [TODO](#todo)
 
 # What can you do with equaPy ?
 For now equaPy includes :
@@ -140,6 +140,17 @@ $$(E)\left\lbrace
 \end{aligned}
 \right.$$
 
+## Update layer
+
+While systems of ODEs can model a lot of objects, there are some limitations.
+
+For example, with an ODE you can easily predict a ball's trajectory **while it is in the air**. But how about when it reaches the ground ? The ball could bounce. To take this phenomenon into account we can apply an update layer on the parameters at each step of the approximation.
+
+The `ODE` class stores a list of functions, called an *update layer*. At each step of a `Scheme`'s approximation algorithm, the functions of the update layer are applied to the computed value. (see example : bouncing ball 2D)
+
+## The `Scheme` class
+
+Once your ODE is ready, you can feed it to a scheme object for it to solve. The list of available methods is [here](#what-can-you-do-with-equapy).
 
 
 ## Example
